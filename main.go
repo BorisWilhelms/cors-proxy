@@ -29,8 +29,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer resp.Body.Close()
-
 	copyHeader(resp.Header, w.Header())
 	w.WriteHeader(resp.StatusCode)
 }
