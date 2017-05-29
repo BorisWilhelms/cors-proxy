@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -12,35 +13,49 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		preflightHandler(w, r)
 		return
 	}
+	log.Println("Incoming request", r.URL.String())
+	if r.URL.RawQuery == "" {
+		http.NotFound(w, r)
+		return
+	}
 
 	remoteURL := r.URL.RawQuery[len("url="):]
 	if remoteURL == "" {
 		http.NotFound(w, r)
 		return
 	}
-	request, err := http.NewRequest(r.Method, remoteURL, r.Body)
-	copyHeader(r.Header, request.Header)
-	client := &http.Client{}
 
-	fmt.Println(request.UserAgent())
-	resp, err := client.Do(request)
+	log.Println("Fetching url", remoteURL)
+	request, err := http.NewRequest(r.Method, remoteURL, r.Body)
+	copyHeader(&r.Header, &request.Header)
+
+	client := &http.Client{}
+	response, err := client.Do(request)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Fatalln("Error on fetching", err.Error())
 		return
 	}
 
-	copyHeader(resp.Header, w.Header())
-	w.WriteHeader(resp.StatusCode)
+	destinationHeader := w.Header()
+	copyHeader(&response.Header, &destinationHeader)
+	w.WriteHeader(response.StatusCode)
+
+	defer response.Body.Close()
+	_, err = io.Copy(w, response.Body)
+	if err != nil {
+		log.Fatalln("Error on copying response", err.Error())
+		return
+	}
 }
 
-func copyHeader(source http.Header, destination http.Header) {
-	for key, value := range source {
+func copyHeader(source *http.Header, destination *http.Header) {
+	for key, value := range *source {
 		destination.Add(key, strings.Join(value, " "))
 	}
 }
 
 func main() {
-	os.Setenv("HTTP_PROXY", "http://localhost:8888")
+	log.SetOutput(os.Stdout)
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
 }
