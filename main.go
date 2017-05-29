@@ -25,7 +25,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	log.Println("Incoming request", r.URL)
 	log.Println("Fetching url", remoteURL)
 	request, err := http.NewRequest(r.Method, remoteURL, r.Body)
 	copyHeader(&r.Header, &request.Header)
@@ -57,6 +56,7 @@ func copyHeader(source *http.Header, destination *http.Header) {
 
 func main() {
 	log.SetOutput(os.Stdout)
+	log.Println("Running cors proxy on http://localhost:8080")
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
 }
