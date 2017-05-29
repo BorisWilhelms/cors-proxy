@@ -2,10 +2,11 @@ package main
 
 import (
 	"io"
-	"log"
 	"net/http"
-	"os"
 	"strings"
+
+	"log"
+	"os"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -13,7 +14,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		preflightHandler(w, r)
 		return
 	}
-	log.Println("Incoming request", r.URL.String())
+
 	if r.URL.RawQuery == "" {
 		http.NotFound(w, r)
 		return
@@ -24,7 +25,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-
+	log.Println("Incoming request", r.URL)
 	log.Println("Fetching url", remoteURL)
 	request, err := http.NewRequest(r.Method, remoteURL, r.Body)
 	copyHeader(&r.Header, &request.Header)
@@ -32,7 +33,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		log.Fatalln("Error on fetching", err.Error())
+		log.Fatalln("Error on fetching", err)
 		return
 	}
 
@@ -43,7 +44,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	defer response.Body.Close()
 	_, err = io.Copy(w, response.Body)
 	if err != nil {
-		log.Fatalln("Error on copying response", err.Error())
+		log.Fatalln("Error on copying response", err)
 		return
 	}
 }
