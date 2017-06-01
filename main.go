@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
+	"flag"
 	"log"
 	"os"
+	"strconv"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -55,8 +58,15 @@ func copyHeader(source *http.Header, destination *http.Header) {
 }
 
 func main() {
+	portNumber := flag.Int("port", 8080, "Port to listen to")
+
+	flag.Parse()
+
+	port := strconv.Itoa(*portNumber)
+
 	log.SetOutput(os.Stdout)
-	log.Println("Running cors proxy on http://localhost:8080")
+	fmt.Println("Running cors proxy on http://localhost:" + port)
+	fmt.Println("Use http://localhost:" + port + "/?url= to proxy url calls")
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe("localhost:"+port, nil)
 }
