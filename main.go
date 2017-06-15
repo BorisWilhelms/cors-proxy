@@ -13,12 +13,13 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Request", r.URL)
 	if isPreflightRequest(r) {
 		preflightHandler(w, r)
 		return
 	}
 
-	if r.URL.RawQuery == "" {
+	if r.URL.RawQuery == "" || !strings.Contains(r.URL.String(), "url=") {
 		http.NotFound(w, r)
 		return
 	}
@@ -28,27 +29,41 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	log.Println("Fetching url", remoteURL)
-	request, err := http.NewRequest(r.Method, remoteURL, r.Body)
-	copyHeader(&r.Header, &request.Header)
 
-	client := &http.Client{}
-	response, err := client.Do(request)
+	response, err := fetchRemote(r.Method, remoteURL, &r.Header, r.Body)
 	if err != nil {
 		log.Fatalln("Error on fetching", err)
 		return
 	}
+	sendResponse(w, response)
+	if err != nil {
+		log.Fatalln("Error on copying response", err)
+		return
+	}
+}
 
+func sendResponse(w http.ResponseWriter, response *http.Response) error {
 	destinationHeader := w.Header()
 	copyHeader(&response.Header, &destinationHeader)
 	w.WriteHeader(response.StatusCode)
 
 	defer response.Body.Close()
-	_, err = io.Copy(w, response.Body)
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+func fetchRemote(method, url string, header *http.Header, body io.Reader) (*http.Response, error) {
+	log.Println("Fetching url", url)
+
+	request, err := http.NewRequest(method, url, body)
 	if err != nil {
-		log.Fatalln("Error on copying response", err)
-		return
+		return nil, err
 	}
+
+	copyHeader(header, &request.Header)
+
+	client := &http.Client{}
+	return client.Do(request)
 }
 
 func copyHeader(source *http.Header, destination *http.Header) {
