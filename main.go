@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/BorisWilhelms/cors-proxy/cors"
+
 	"flag"
 	"log"
 	"os"
@@ -14,11 +16,6 @@ import (
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Request", r.URL)
-	if isPreflightRequest(r) {
-		preflightHandler(w, r)
-		return
-	}
-
 	if r.URL.RawQuery == "" || !strings.Contains(r.URL.String(), "url=") {
 		http.NotFound(w, r)
 		return
@@ -82,6 +79,6 @@ func main() {
 	log.SetOutput(os.Stdout)
 	fmt.Println("Running cors proxy on http://localhost:" + port)
 	fmt.Println("Use http://localhost:" + port + "/?url= to proxy url calls")
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/", cors.PreflightHandler(handler))
 	http.ListenAndServe("localhost:"+port, nil)
 }
