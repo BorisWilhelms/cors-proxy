@@ -29,12 +29,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	response, err := fetchRemote(r.Method, remoteURL, &r.Header, r.Body)
 	if err != nil {
-		log.Fatalln("Error on fetching", err)
+		log.Println("Error on fetching", err)
 		return
 	}
 	sendResponse(w, response)
 	if err != nil {
-		log.Fatalln("Error on copying response", err)
+		log.Println("Error on copying response", err)
 		return
 	}
 }
